@@ -3,14 +3,17 @@ import hashlib
 from dotenv import load_dotenv
 import os
 from fastapi import FastAPI
+from fastapi import HTTPException
 from pydantic import BaseModel
 from pathlib import Path
 import json
 
-
 class Key(BaseModel):
     type_: str
     code: int
+
+class Task(BaseModel):
+    guid: int
 
 
 def get_jwt_token(url_template, fedresurs_password):
@@ -22,13 +25,11 @@ def get_jwt_token(url_template, fedresurs_password):
     response = requests.post(url, json=payload)
     response.raise_for_status()
     jwt_token = response.json()['jwt']
-    with open('.env', 'at', encoding='utf-8') as trg:
-        print(f'\nJWT_TOKEN={jwt_token}', file=trg)
     return jwt_token
 
 
-def get_messages_for_company(url_template, jwt_token, fedresurs_password, participant_type, participant_code):
-    jwt_token = get_jwt_token(url_template, fedresurs_password)  # пока будем авторизовываться заново каждый раз, потом можно оптимизировать
+def get_messages_for_company(url_template, jwt_token, participant_type, participant_code):
+    
     url = url_template.format('v1/messages')
     headers = {'Authorization': f'Bearer {jwt_token}'}
     offset = 0
@@ -75,21 +76,13 @@ load_dotenv()
 
 fedresurs_login = os.getenv('FEDRESURS_LOGIN')
 fedresurs_password = hashlib.sha512(str.encode(os.getenv('FEDRESURS_PASSWORD'))).hexdigest().upper()
-jwt_token = os.getenv('JWT_TOKEN')
 
 if fedresurs_login == 'demo':
     url_template = 'https://services.fedresurs.ru/SignificantEvents/MessagesServiceDemo2/{}/'
 else:
     url_template = 'https://services.fedresurs.ru/SignificantEvents/MessagesService2/{}/'
 
-
-
 app = FastAPI()
-
-
-@app.get('/')
-def root():
-    return {'hello' : 'world'}
 
 
 @app.post('/task/', status_code=201)
@@ -106,11 +99,20 @@ def create_task(key:Key):
     return {'task_guid': task['guid']}
 
 
-# @app.post('/messages/')
-# def get_messages(task_guid: int):
-    # tasks = load_tasks
-    # task = list(filter(lambda task: tasks['guid'] == task_guid, tasks))
-    # participant_type = task['type_']
-    # participant_code = task['code']
-    # messages = get_messages_for_company(url_template, jwt_token, fedresurs_password, participant_type, participant_code)
-    # return messages
+@app.post('/messages/')
+def get_messages(task_guid: Task):
+    task_guid = task_guid.dict()
+    tasks = load_tasks(filepath)
+    task = list(filter(lambda task: task['guid'] == task_guid['guid'], tasks))
+    if task:
+        participant_type = task[0]['type_']
+        participant_code = task[0]['code']
+        try:
+            jwt_token = get_jwt_token(url_template, fedresurs_password)
+        except requests.exceptions.HTTPError:
+            raise HTTPException(status_code=500, detail='Invalid fedresurs API login or password')
+        messages = get_messages_for_company(url_template, jwt_token, participant_type, participant_code)
+        if messages:
+            return messages
+        raise HTTPException(status_code=500, detail='No messages found')
+    raise HTTPException(status_code=404, detail='Task not found')
