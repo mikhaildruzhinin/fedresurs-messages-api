@@ -8,9 +8,11 @@ from pydantic import BaseModel
 from pathlib import Path
 import json
 
+
 class Key(BaseModel):
     type_: str
     code: int
+
 
 class Task(BaseModel):
     guid: int
@@ -29,7 +31,7 @@ def get_jwt_token(url_template, fedresurs_password):
 
 
 def get_messages_for_company(url_template, jwt_token, participant_type, participant_code):
-    
+
     url = url_template.format('v1/messages')
     headers = {'Authorization': f'Bearer {jwt_token}'}
     offset = 0
@@ -75,7 +77,8 @@ filepath.touch(exist_ok=True)
 load_dotenv()
 
 fedresurs_login = os.getenv('FEDRESURS_LOGIN')
-fedresurs_password = hashlib.sha512(str.encode(os.getenv('FEDRESURS_PASSWORD'))).hexdigest().upper()
+fedresurs_password = hashlib.sha512(str.encode(os.getenv('FEDRESURS_PASSWORD')))
+fedresurs_password = fedresurs_password.hexdigest().upper()
 
 if fedresurs_login == 'demo':
     url_template = 'https://services.fedresurs.ru/SignificantEvents/MessagesServiceDemo2/{}/'
@@ -86,7 +89,7 @@ app = FastAPI()
 
 
 @app.post('/task/', status_code=201)
-def create_task(key:Key):
+def create_task(key: Key):
     tasks = load_tasks(filepath)
     task = key.dict()
     if tasks:
