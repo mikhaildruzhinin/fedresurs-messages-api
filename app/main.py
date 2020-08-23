@@ -39,7 +39,12 @@ def get_messages_for_company(url_template, jwt_token, participant_type, particip
     all_messages = []
     while True:
         payload = {
-            'messageTypes': 'StopFinancialLeaseContract',  # заменить на нужные типы
+            'messageTypes': 'CreditorIntentionGoToCourt',
+            'messageTypes': 'DebtorIntentionGoToCourt',
+            'messageTypes': 'AppearanceOfBankruptcySigns',
+            'messageTypes': 'BankruptcyArticle8',
+            'messageTypes': 'BankruptcyArticle9',
+            'messageTypes': 'DebtorBankruptcyCourtNotification',
             'participant.type': participant_type,
             'participant.code': participant_code,
             'limit': 20,
