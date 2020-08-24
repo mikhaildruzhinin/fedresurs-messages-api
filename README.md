@@ -37,7 +37,7 @@ FEDRESURS_PASSWORD='Ax!761BN'
 | HTTP метод | URI | Действие | Параметры |
 | --- | --- | --- | --- |
 | POST | http://localhost:8000/task/ | Добавление нового задания | `type_: str`, `code: int` |
-| POST | http://localhost:8000/messages/ | Выполнение задания | ``guid: int` |
+| POST | http://localhost:8000/messages/ | Выполнение задания | `guid: int` |
 
 Более подробная информация будет доступна в интерактивной [документации](http://localhost:8000/docs/) по API, которая будет создана автоматически при запуске приложения.
 
